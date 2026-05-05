@@ -1,0 +1,14 @@
+# Patterns to ignore when packaging or installing.
+.DS_Store
+*.swp
+*.bak
+*.tmp
+*.orig
+*~
+.git/
+.gitignore
+.bkp
+.idea/
+.vscode/
+*.tgz
+OWNERS

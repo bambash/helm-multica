@@ -1,0 +1,18 @@
+apiVersion: v2
+name: multica
+description: Helm chart for Multica — the open-source managed agents platform
+type: application
+version: 0.1.0
+appVersion: "latest"
+keywords:
+  - multica
+  - agents
+  - ai
+  - managed-agents
+  - agent-orchestration
+home: https://github.com/multica-ai/multica
+sources:
+  - https://github.com/multica-ai/multica
+maintainers:
+  - name: bambash
+    url: https://github.com/bambash

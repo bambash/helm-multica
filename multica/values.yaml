@@ -1,0 +1,338 @@
+# =============================================================================
+# Multica Helm Chart — Default Values
+# =============================================================================
+
+# -- Override the release name (used for resource name prefix)
+nameOverride: ""
+# -- Override the full name (used for resource names throughout)
+fullnameOverride: ""
+
+# ---------------------------------------------------------------------------
+# Image configuration
+# ---------------------------------------------------------------------------
+image:
+  backend:
+    repository: ghcr.io/multica-ai/multica-backend
+    tag: latest
+    pullPolicy: IfNotPresent
+  frontend:
+    repository: ghcr.io/multica-ai/multica-web
+    tag: latest
+    pullPolicy: IfNotPresent
+
+# -- Image pull secrets for private registries
+imagePullSecrets: []
+
+# ---------------------------------------------------------------------------
+# Replica counts
+# ---------------------------------------------------------------------------
+replicaCount:
+  backend: 1
+  frontend: 1
+
+# ---------------------------------------------------------------------------
+# ServiceAccount
+# ---------------------------------------------------------------------------
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# -- Annotations applied to all pods
+podAnnotations: {}
+# -- Labels applied to all pods
+podLabels: {}
+
+# -- Pod-level security context
+podSecurityContext: {}
+  # fsGroup: 1001
+
+# -- Container-level security context
+securityContext:
+  backend:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: false
+  frontend:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: false
+  postgresql:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+
+# ---------------------------------------------------------------------------
+# Service configuration
+# ---------------------------------------------------------------------------
+service:
+  backend:
+    type: ClusterIP
+    port: 8080
+    # -- Optional nodePort if type is NodePort
+    nodePort: null
+    annotations: {}
+  frontend:
+    type: ClusterIP
+    port: 3000
+    # -- Optional nodePort if type is NodePort
+    nodePort: null
+    annotations: {}
+  postgresql:
+    type: ClusterIP
+    port: 5432
+
+# ---------------------------------------------------------------------------
+# Ingress
+# ---------------------------------------------------------------------------
+ingress:
+  enabled: false
+  # -- Ingress class name (e.g. nginx, traefik, contour)
+  className: ""
+  # -- Annotations applied to the Ingress resource
+  annotations: {}
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+    # nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    # nginx.ingress.kubernetes.io/proxy-read-timeout: "86400"
+    # nginx.ingress.kubernetes.io/proxy-send-timeout: "86400"
+  # -- Use separate hosts for frontend and backend (api.* + app.*).
+  # When false, all traffic goes through the frontend service on a single host
+  # and Next.js rewrites proxy API calls internally. WebSocket connections
+  # are routed directly to the backend via /ws path.
+  separateHosts:
+    enabled: false
+    # -- Frontend hostname (e.g. app.example.com)
+    frontendHost: ""
+    # -- Backend API hostname (e.g. api.example.com)
+    backendHost: ""
+  hosts:
+    - host: multica.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  #  - secretName: multica-tls
+  #    hosts:
+  #      - multica.example.com
+
+# ---------------------------------------------------------------------------
+# Resources
+# ---------------------------------------------------------------------------
+resources:
+  backend:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 512Mi
+  frontend:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  postgresql:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+# ---------------------------------------------------------------------------
+# Autoscaling (backend only)
+# ---------------------------------------------------------------------------
+autoscaling:
+  backend:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+
+# ---------------------------------------------------------------------------
+# Pod Disruption Budget
+# ---------------------------------------------------------------------------
+podDisruptionBudget:
+  enabled: false
+  backend:
+    minAvailable: 1
+  frontend:
+    minAvailable: 1
+
+# ---------------------------------------------------------------------------
+# Node selection
+# ---------------------------------------------------------------------------
+nodeSelector: {}
+tolerations: []
+affinity: {}
+topologySpreadConstraints: []
+
+# ---------------------------------------------------------------------------
+# Built-in PostgreSQL
+# ---------------------------------------------------------------------------
+postgresql:
+  # -- Deploy a PostgreSQL instance inside the cluster.
+  # Set to false and configure externalDatabase for production use.
+  enabled: true
+  image:
+    repository: pgvector/pgvector
+    tag: pg17
+    pullPolicy: IfNotPresent
+  auth:
+    database: multica
+    username: multica
+    # -- Password is auto-generated if left empty. Use a Secret for production.
+    password: ""
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClass: ""
+    accessModes:
+      - ReadWriteOnce
+
+# ---------------------------------------------------------------------------
+# External database (used when postgresql.enabled is false)
+# ---------------------------------------------------------------------------
+externalDatabase:
+  # -- Full DSN overrides all other fields when set.
+  url: ""
+  host: ""
+  port: 5432
+  database: multica
+  username: multica
+  password: ""
+  sslmode: require
+  # -- Name of an existing Secret that contains the database URL under key
+  # "database-url". Takes precedence over host/port/etc.
+  existingSecret: ""
+
+# ---------------------------------------------------------------------------
+# Backend application configuration
+# ---------------------------------------------------------------------------
+backend:
+  # -- JWT secret for signing tokens. Auto-generated if left empty.
+  # Override with a fixed value for stable sessions across restarts.
+  jwtSecret: ""
+  # -- Existing Secret containing "jwt-secret" key. Takes precedence over jwtSecret.
+  existingSecret: ""
+
+  # -- Application environment. Set to "production" for security hardening.
+  appEnv: production
+
+  # -- Dev verification code (ignored when appEnv is production).
+  # Only set for private test instances.
+  devVerificationCode: ""
+
+  # -- Metrics listener address. Empty disables Prometheus metrics.
+  # Bind to loopback only; protect with private networking in production.
+  # Example: "0.0.0.0:9090"
+  metricsAddr: ""
+
+  # -- Log level: debug, info, warn, error
+  logLevel: info
+
+  # -- Realtime metrics endpoint access token (protects /health/realtime).
+  # Required when behind a reverse proxy. Pass as Authorization: Bearer <token>.
+  realtimeMetricsToken: ""
+
+  # -----------------------------------------------------------------------
+  # Email (Resend) — required for authentication in production
+  # -----------------------------------------------------------------------
+  resend:
+    # -- Resend API key. Leave empty for dev (codes printed to backend logs).
+    apiKey: ""
+    # -- Sender email address (must be verified in Resend).
+    fromEmail: "noreply@multica.ai"
+    # -- Existing Secret containing "resend-api-key" key.
+    existingSecret: ""
+
+  # -----------------------------------------------------------------------
+  # Google OAuth (optional)
+  # -----------------------------------------------------------------------
+  googleOAuth:
+    clientId: ""
+    clientSecret: ""
+    redirectUri: ""
+    # -- Existing Secret containing "google-client-secret" key.
+    existingSecret: ""
+
+  # -----------------------------------------------------------------------
+  # S3 / CloudFront file storage (optional)
+  # -----------------------------------------------------------------------
+  s3:
+    bucket: ""
+    region: us-west-2
+  cloudfront:
+    domain: ""
+    keyPairId: ""
+    privateKey: ""
+    # -- Existing Secret containing "cloudfront-private-key" key.
+    existingSecret: ""
+
+  # -----------------------------------------------------------------------
+  # Signup controls
+  # -----------------------------------------------------------------------
+  allowSignup: true
+  # -- Comma-separated list of allowed email domains
+  allowedEmailDomains: ""
+  # -- Comma-separated list of allowed email addresses
+  allowedEmails: ""
+
+  # -----------------------------------------------------------------------
+  # Cookie
+  # -----------------------------------------------------------------------
+  # -- Cookie Domain attribute. Leave empty for single-host deployments.
+  # Only set when frontend/backend are on different subdomains of the same
+  # registered domain (e.g. ".example.com"). Do NOT use an IP address.
+  cookieDomain: ""
+
+  # -----------------------------------------------------------------------
+  # Allowed origins (CORS + WebSocket)
+  # -----------------------------------------------------------------------
+  # -- Comma-separated list of allowed origins. Defaults to frontend origin
+  # when empty.
+  allowedOrigins: ""
+
+  # -----------------------------------------------------------------------
+  # Upload persistence
+  # -----------------------------------------------------------------------
+  persistence:
+    enabled: true
+    size: 5Gi
+    storageClass: ""
+    accessModes:
+      - ReadWriteOnce
+
+# ---------------------------------------------------------------------------
+# Frontend configuration
+# ---------------------------------------------------------------------------
+frontend:
+  # -- Public origin where the frontend is accessed.
+  # Auto-derived from ingress when empty.
+  origin: ""
+
+  # -- WebSocket URL override (build-time value baked into the image).
+  # Only set if you are building a custom web image. The recommended approach
+  # is to route /ws at the ingress/reverse-proxy layer instead.
+  wsUrl: ""
+
+# ---------------------------------------------------------------------------
+# Prometheus ServiceMonitor
+# ---------------------------------------------------------------------------
+metrics:
+  serviceMonitor:
+    enabled: false
+    # -- Additional labels for the ServiceMonitor
+    labels: {}
+    # -- Scrape interval
+    interval: 30s
+    # -- Scrape timeout
+    scrapeTimeout: 10s

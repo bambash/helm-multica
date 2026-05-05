@@ -1,0 +1,151 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "multica.backend.fullname" . }}
+  labels:
+    {{- include "multica.labels" . | nindent 4 }}
+    {{- include "multica.backend.selectorLabels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount.backend }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      {{- include "multica.backend.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "multica.backend.selectorLabels" . | nindent 8 }}
+        {{- include "multica.labels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "multica.serviceAccountName" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      initContainers:
+        - name: migrate
+          image: {{ .Values.image.backend.repository }}:{{ .Values.image.backend.tag }}
+          imagePullPolicy: {{ .Values.image.backend.pullPolicy }}
+          command: ["./migrate", "up"]
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "multica.fullname" . }}-secret
+                  key: database-url
+          {{- with .Values.securityContext.backend }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      containers:
+        - name: backend
+          image: {{ .Values.image.backend.repository }}:{{ .Values.image.backend.tag }}
+          imagePullPolicy: {{ .Values.image.backend.pullPolicy }}
+          command: ["./server"]
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.backend.port }}
+              protocol: TCP
+            {{- if .Values.backend.metricsAddr }}
+            - name: metrics
+              containerPort: 9090
+              protocol: TCP
+            {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "multica.fullname" . }}-config
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "multica.fullname" . }}-secret
+                  key: database-url
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "multica.fullname" . }}-secret
+                  key: jwt-secret
+            {{- if .Values.backend.resend.apiKey }}
+            - name: RESEND_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "multica.fullname" . }}-secret
+                  key: resend-api-key
+            {{- end }}
+            {{- if .Values.backend.googleOAuth.clientSecret }}
+            - name: GOOGLE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "multica.fullname" . }}-secret
+                  key: google-client-secret
+            {{- end }}
+            {{- if .Values.backend.cloudfront.privateKey }}
+            - name: CLOUDFRONT_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "multica.fullname" . }}-secret
+                  key: cloudfront-private-key
+            {{- end }}
+          {{- with .Values.securityContext.backend }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.resources.backend }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+          volumeMounts:
+            {{- if .Values.backend.persistence.enabled }}
+            - name: uploads
+              mountPath: /app/data/uploads
+            {{- end }}
+      volumes:
+        {{- if .Values.backend.persistence.enabled }}
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: {{ include "multica.backend.fullname" . }}-uploads
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

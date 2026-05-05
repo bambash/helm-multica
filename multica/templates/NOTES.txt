@@ -1,0 +1,64 @@
+{{- if .Values.ingress.enabled }}
+{{- if .Values.ingress.separateHosts.enabled }}
+{{- $fhost := .Values.ingress.separateHosts.frontendHost }}
+{{- $bhost := .Values.ingress.separateHosts.backendHost }}
+{{- $protocol := "http" }}{{ if .Values.ingress.tls }}{{ $protocol = "https" }}{{ end }}
+===============================================================================
+  Multica deployed!
+
+  Frontend:  {{ $protocol }}://{{ $fhost }}
+  Backend:   {{ $protocol }}://{{ $bhost }}
+
+  The frontend proxies /api, /auth, and /uploads to the backend automatically.
+  WebSocket connections go directly to the backend at wss://{{ $bhost }}/ws
+===============================================================================
+{{- else }}
+{{- $host := (index .Values.ingress.hosts 0).host }}
+{{- $protocol := "http" }}{{ if .Values.ingress.tls }}{{ $protocol = "https" }}{{ end }}
+===============================================================================
+  Multica deployed!
+
+  Access:    {{ $protocol }}://{{ $host }}
+
+  Next.js rewrites proxy /api, /auth, and /uploads to the backend internally.
+  Ensure your ingress routes /ws to the backend service for WebSocket support.
+===============================================================================
+{{- end }}
+{{- else }}
+===============================================================================
+  Multica deployed!
+
+  Get the application URLs by running:
+    kubectl get svc -l app.kubernetes.io/instance={{ .Release.Name }}
+
+  Or port-forward to access directly:
+    kubectl port-forward svc/{{ include "multica.frontend.fullname" . }} 3000:3000
+    kubectl port-forward svc/{{ include "multica.backend.fullname" . }} 8080:8080
+===============================================================================
+{{- end }}
+
+{{- if .Values.postgresql.enabled }}
+  PostgreSQL is deployed inside the cluster.
+{{- else }}
+  Using external database at {{ .Values.externalDatabase.host }}:{{ .Values.externalDatabase.port }}.
+{{- end }}
+
+{{- if not .Values.backend.jwtSecret }}
+  WARNING: JWT_SECRET was auto-generated. Set backend.jwtSecret to a fixed
+  value to keep sessions valid across Helm upgrades.
+{{- end }}
+
+{{- if not .Values.backend.resend.apiKey }}
+  INFO: RESEND_API_KEY is not set. Verification codes will be printed to
+  backend logs. Configure Resend for production use.
+{{- end }}
+
+  CLI setup (on each user's machine):
+    multica config set server_url <backend-url>
+    multica config set app_url <frontend-url>
+    multica login
+    multica daemon start
+
+  See the Multica self-hosting docs for full setup instructions:
+    https://github.com/multica-ai/multica/blob/main/SELF_HOSTING.md
+===============================================================================
