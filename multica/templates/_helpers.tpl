@@ -113,7 +113,7 @@ Database URL
 {{- define "multica.databaseUrl" -}}
 {{- if .Values.postgresql.enabled }}
 {{- $user := .Values.postgresql.auth.username }}
-{{- $pass := .Values.postgresql.auth.password }}
+{{- $pass := or .Values.postgresql.auth.password (include "multica.postgresqlPassword" .) }}
 {{- $host := include "multica.postgresql.fullname" . }}
 {{- $port := 5432 }}
 {{- $db := .Values.postgresql.auth.database }}
