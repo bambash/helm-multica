@@ -54,6 +54,9 @@ data:
   COOKIE_DOMAIN: {{ .Values.backend.cookieDomain | quote }}
   {{- end }}
   MULTICA_APP_URL: {{ include "multica.frontendOrigin" . | quote }}
+  {{- if .Values.backend.github.appSlug }}
+  GITHUB_APP_SLUG: {{ .Values.backend.github.appSlug | quote }}
+  {{- end }}
   {{- if .Values.frontend.wsUrl }}
   NEXT_PUBLIC_WS_URL: {{ .Values.frontend.wsUrl | quote }}
   {{- end }}

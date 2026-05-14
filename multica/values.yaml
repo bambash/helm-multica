@@ -302,6 +302,15 @@ backend:
   allowedOrigins: ""
 
   # -----------------------------------------------------------------------
+  # GitHub App integration (optional)
+  # -----------------------------------------------------------------------
+  github:
+    appSlug: ""
+    webhookSecret: ""
+    # -- Existing Secret containing "github-webhook-secret" key.
+    existingSecret: ""
+
+  # -----------------------------------------------------------------------
   # Upload persistence
   # -----------------------------------------------------------------------
   persistence:

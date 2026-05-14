@@ -100,6 +100,13 @@ spec:
                   name: {{ include "multica.fullname" . }}-secret
                   key: cloudfront-private-key
             {{- end }}
+            {{- if .Values.backend.github.webhookSecret }}
+            - name: GITHUB_WEBHOOK_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "multica.fullname" . }}-secret
+                  key: github-webhook-secret
+            {{- end }}
           {{- with .Values.securityContext.backend }}
           securityContext:
             {{- toYaml . | nindent 12 }}
