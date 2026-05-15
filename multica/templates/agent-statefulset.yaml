@@ -50,7 +50,7 @@ spec:
               value: {{ $agent.pollInterval | default "3s" | quote }}
             - name: MULTICA_DAEMON_HEARTBEAT_INTERVAL
               value: {{ $agent.heartbeatInterval | default "15s" | quote }}
-            - name: MULTICA_PAT_TOKEN
+            - name: MULTICA_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: multica-agent-pat
