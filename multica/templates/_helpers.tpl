@@ -181,3 +181,10 @@ PostgreSQL password
 {{- randAlphaNum 16 }}
 {{- end }}
 {{- end }}
+
+{{/*
+Agent runtime full name
+*/}}
+{{- define "multica.agent.fullname" -}}
+{{ include "multica.fullname" . }}-agent
+{{- end }}

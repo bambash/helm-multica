@@ -345,3 +345,84 @@ metrics:
     interval: 30s
     # -- Scrape timeout
     scrapeTimeout: 10s
+
+# ---------------------------------------------------------------------------
+# Agent runtimes (StatefulSets — one per AI tool)
+# ---------------------------------------------------------------------------
+agents:
+  defaultResources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 4000m
+      memory: 4Gi
+
+  claude:
+    enabled: false
+    type: claude
+    replicas: 1
+    image:
+      repository: ghcr.io/bambash/multica-agent
+      tag: latest
+      pullPolicy: Always
+    serverUrl: "http://multica-backend:8080"
+    workspacesRoot: /workspace/multica_workspaces
+    pollInterval: "3s"
+    heartbeatInterval: "15s"
+    terminationGracePeriodSeconds: 120
+    persistence:
+      storageClass: ""
+      workspaceSize: 30Gi
+      homeSize: 5Gi
+
+  copilot:
+    enabled: false
+    type: copilot
+    replicas: 1
+    image:
+      repository: ghcr.io/bambash/multica-agent
+      tag: latest
+      pullPolicy: Always
+    serverUrl: "http://multica-backend:8080"
+    workspacesRoot: /workspace/multica_workspaces
+    pollInterval: "3s"
+    heartbeatInterval: "15s"
+    terminationGracePeriodSeconds: 120
+    persistence:
+      storageClass: ""
+      workspaceSize: 20Gi
+      homeSize: 5Gi
+
+# ---------------------------------------------------------------------------
+# Agent setup job (PostSync hook — creates personas and imports skills)
+# ---------------------------------------------------------------------------
+agentSetup:
+  enabled: false
+  serverUrl: "http://multica-backend:8080"
+  skills:
+    - name: frontend-design
+      url: "https://github.com/anthropics/claude-code/tree/main/skills/frontend-design"
+    - name: test-driven-development
+      url: "https://github.com/anthropics/claude-code/tree/main/skills/test-driven-development"
+  personas:
+    - name: "Backend Developer"
+      runtimeType: claude
+      description: "Expert backend developer focused on APIs and system design"
+      instructions: "You are an expert backend developer. Focus on clean APIs, robust error handling, and well-tested code. Always review existing patterns before introducing new abstractions. Prefer Go and Python."
+    - name: "Frontend Developer"
+      runtimeType: claude
+      description: "Expert frontend developer focused on React and UX"
+      instructions: "You are an expert frontend developer. Build accessible, performant UIs with React and TypeScript. Follow the existing design system and component library."
+    - name: "Product Manager"
+      runtimeType: claude
+      description: "Strategic PM who writes clear specs and acceptance criteria"
+      instructions: "You are a product manager. Help define requirements, write user stories, and clarify acceptance criteria. Keep responses concise and actionable."
+    - name: "DevOps Engineer"
+      runtimeType: claude
+      description: "Infrastructure and CI/CD specialist"
+      instructions: "You are a DevOps engineer. Focus on Kubernetes, Helm, GitOps (ArgoCD), and CI/CD pipelines. Prefer declarative infrastructure. Always dry-run before applying."
+    - name: "Code Reviewer"
+      runtimeType: claude
+      description: "Thorough code reviewer focused on correctness and maintainability"
+      instructions: "You are a code reviewer. Review for correctness, security, performance, and maintainability. Be specific about what to change and why."
