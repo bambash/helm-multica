@@ -26,7 +26,7 @@ spec:
         app.kubernetes.io/component: agent
         multica.ai/agent-type: {{ $agent.type }}
     spec:
-      serviceAccountName: claude
+      serviceAccountName: {{ if $agent.serviceAccount }}{{ $agent.serviceAccount.name }}{{ else }}claude{{ end }}
       terminationGracePeriodSeconds: {{ $agent.terminationGracePeriodSeconds | default 120 }}
       {{- with $.Values.imagePullSecrets }}
       imagePullSecrets:
