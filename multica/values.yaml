@@ -349,6 +349,14 @@ metrics:
 # ---------------------------------------------------------------------------
 # Agent runtimes (StatefulSets — one per AI tool)
 # ---------------------------------------------------------------------------
+# Optional serviceAccount block (per agent). If omitted, the pod uses the
+# 'claude' SA (existing cluster default). Schema:
+#
+#   serviceAccount:
+#     create: true              # creates the SA in the release namespace
+#     name: multica-my-agent   # SA name used by the pod and in the CRB
+#     clusterRoleBinding:       # omit entirely — no ClusterRoleBinding created
+#       clusterRole: cluster-admin
 agents:
   defaultResources:
     requests:
