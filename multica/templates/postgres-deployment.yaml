@@ -7,7 +7,7 @@ metadata:
     {{- include "multica.labels" . | nindent 4 }}
     {{- include "multica.postgresql.selectorLabels" . | nindent 4 }}
 spec:
-  replicas: 1
+  replicas: {{ if hasKey .Values.postgresql "replicas" }}{{ .Values.postgresql.replicas }}{{ else }}1{{ end }}
   strategy:
     type: Recreate
   selector:

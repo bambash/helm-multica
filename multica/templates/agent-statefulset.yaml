@@ -11,7 +11,7 @@ metadata:
     multica.ai/agent-type: {{ $agent.type }}
 spec:
   serviceName: {{ include "multica.fullname" $ }}-agent-{{ $name }}
-  replicas: {{ $agent.replicas | default 1 }}
+  replicas: {{ if hasKey $agent "replicas" }}{{ $agent.replicas }}{{ else }}1{{ end }}
   updateStrategy:
     type: RollingUpdate
   selector:

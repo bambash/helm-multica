@@ -182,6 +182,9 @@ postgresql:
   # -- Deploy a PostgreSQL instance inside the cluster.
   # Set to false and configure externalDatabase for production use.
   enabled: true
+  # -- Number of PostgreSQL replicas. Set to 0 to stop the database without
+  # removing the PVC (data is retained on re-enable). Defaults to 1.
+  replicas: 1
   image:
     repository: pgvector/pgvector
     tag: pg17
